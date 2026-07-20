@@ -15,10 +15,10 @@
   --text-faint: rgba(247, 241, 231, 0.45);
   --shadow: rgba(0, 0, 0, 0.48);
   --blue-glow: rgba(170, 205, 255, 0.38);
-  --classroom-scale: 0.54;
-  --seat-width: 140px;
-  --seat-height: 210px;
-  --seat-gap-x: 16px;
+  --classroom-scale: 0.56;
+  --seat-width: 150px;
+  --seat-height: 225px;
+  --seat-gap-x: 18px;
   --seat-gap-y: 18px;
   --viewport-width: 100vw;
   --viewport-height: 100vh;
@@ -132,32 +132,32 @@ button {
 .classroom {
   z-index: 2;
   display: grid;
-  place-items: end center;
+  place-items: center;
   pointer-events: none;
   opacity: 0;
-  transform: translate3d(0, 4.5vh, 0) scale(0.985);
+  transform: none;
   transition:
-    opacity 900ms cubic-bezier(0.19, 1, 0.22, 1),
-    transform 900ms cubic-bezier(0.19, 1, 0.22, 1);
+    opacity 900ms cubic-bezier(0.19, 1, 0.22, 1);
+  will-change: opacity;
 }
 
 .classroom.is-visible {
   opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
 }
 
 .classroom__shell {
   position: relative;
-  width: min(1240px, 96vw);
-  padding: 1.25rem 1rem 1.5rem;
-  transform-origin: center 92%;
+  width: min(1480px, 98vw);
+  padding: 0;
+  transform-origin: center center;
   transform:
+    translate3d(0, -6vh, 0)
     perspective(1600px)
-    rotateX(26deg)
-    rotateZ(-4deg)
+    rotateX(25deg)
+    rotateZ(-3deg)
     scale(var(--classroom-scale));
   display: grid;
-  gap: 0.95rem;
+  gap: 0;
   align-items: center;
   justify-items: center;
   filter: drop-shadow(0 24px 42px rgba(0, 0, 0, 0.45));
@@ -204,8 +204,8 @@ button {
   gap: var(--seat-gap-y) var(--seat-gap-x);
   align-items: center;
   justify-content: center;
-  padding: 1rem 1.4rem 1.35rem;
-  border-radius: 34px;
+  padding: 1.15rem 1.5rem 1.4rem;
+  border-radius: 36px;
   background:
     radial-gradient(circle at 50% 12%, rgba(212, 175, 55, 0.16), transparent 34%),
     radial-gradient(circle at 50% 100%, rgba(8, 10, 15, 0.95), rgba(5, 5, 7, 0.82)),
@@ -220,7 +220,7 @@ button {
   position: relative;
   width: var(--seat-width);
   height: var(--seat-height);
-  border-radius: 26px;
+  border-radius: 24px;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01)),
@@ -234,8 +234,8 @@ button {
 
 .seat-slot__frame {
   position: absolute;
-  inset: 9px;
-  border-radius: 20px;
+  inset: 8px;
+  border-radius: 18px;
   border: 1px solid rgba(255, 229, 174, 0.14);
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.24),
@@ -244,10 +244,10 @@ button {
 
 .seat-slot__seat {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 16px;
+  left: 16px;
   z-index: 2;
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.22em;
   color: rgba(247, 241, 231, 0.86);
@@ -626,6 +626,7 @@ button {
 }
 
 .ui-shell__caption {
+  display: none;
   flex: 1;
   max-width: min(700px, 58vw);
   text-align: center;
@@ -981,7 +982,7 @@ button {
 
 @media (max-width: 1100px) {
   :root {
-    --classroom-scale: 0.48;
+    --classroom-scale: 0.56;
   }
 
   .ui-shell__hud {
@@ -997,21 +998,20 @@ button {
 
 @media (max-width: 860px) {
   :root {
-    --classroom-scale: 0.42;
-    --seat-width: 108px;
-    --seat-height: 162px;
+    --classroom-scale: 0.5;
+    --seat-width: 126px;
+    --seat-height: 189px;
     --seat-gap-x: 12px;
     --seat-gap-y: 14px;
   }
 
   .classroom__shell {
-    width: min(96vw, 1100px);
-    padding-inline: 0.4rem;
+    width: min(98vw, 1220px);
   }
 
   .classroom__grid {
-    padding: 0.9rem;
-    border-radius: 28px;
+    padding: 1rem 1.1rem 1.1rem;
+    border-radius: 30px;
   }
 
   .intro-overlay__card {
@@ -1030,22 +1030,22 @@ button {
 
 @media (max-width: 720px) {
   :root {
-    --classroom-scale: 0.34;
-    --seat-width: 98px;
-    --seat-height: 146px;
+    --classroom-scale: 0.44;
+    --seat-width: 104px;
+    --seat-height: 156px;
     --seat-gap-x: 10px;
     --seat-gap-y: 12px;
   }
 
   .classroom {
-    place-items: center end;
+    place-items: center;
   }
 
   .classroom__shell {
     transform:
       perspective(1400px)
       rotateX(22deg)
-      rotateZ(-5deg)
+      rotateZ(-3deg)
       scale(var(--classroom-scale));
   }
 

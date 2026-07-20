@@ -53,6 +53,7 @@ export function createClassroomView(): ClassroomView {
     <div class="classroom__header-title">27 Seats in Play</div>
     <div class="classroom__header-subtitle">The cards land where the room decides.</div>
   `;
+  header.hidden = true;
 
   const grid = document.createElement("div");
   grid.className = "classroom__grid";
@@ -63,6 +64,7 @@ export function createClassroomView(): ClassroomView {
     <span class="classroom__footer-line"></span>
     <span class="classroom__footer-copy">Top-down classroom view, tilted for a cinematic perspective.</span>
   `;
+  footer.hidden = true;
 
   shell.append(header, grid, footer);
   root.append(shell);

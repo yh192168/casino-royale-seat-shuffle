@@ -466,6 +466,8 @@ export function createDealerStage(container: HTMLElement, options: DealerStageOp
   dealerRoot.position.set(0, 0.86, -1.88);
   dealerRoot.rotation.y = 0.12;
   scene.add(dealerRoot);
+  // Keep the human figure out of view; the room should feel staffed, not populated.
+  dealerRoot.visible = false;
 
   const jacketMaterial = new THREE.MeshStandardMaterial({
     color: 0x09090c,
@@ -623,7 +625,6 @@ export function createDealerStage(container: HTMLElement, options: DealerStageOp
   const focus = new THREE.Vector3(0, 1.36, 0);
   const tempVector = new THREE.Vector3();
   const deckAnchor = new THREE.Vector3();
-  const handAnchor = new THREE.Vector3();
   const particleAttribute = particleGeometry.getAttribute("position") as THREE.BufferAttribute;
   const particlePositionArray = particlePositions;
   let deckRemaining = 27;
@@ -663,7 +664,10 @@ export function createDealerStage(container: HTMLElement, options: DealerStageOp
   }
 
   function getHandPoint(): ScreenPoint {
-    handWorldAnchor.position.copy(rightArm.terminal.getWorldPosition(handAnchor));
+    handWorldAnchor.position.copy(deckGroup.getWorldPosition(deckAnchor));
+    handWorldAnchor.position.x += 0.82;
+    handWorldAnchor.position.y += 0.92;
+    handWorldAnchor.position.z += 0.18;
     return project(handWorldAnchor.position);
   }
 

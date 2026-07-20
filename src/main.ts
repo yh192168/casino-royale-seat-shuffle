@@ -104,9 +104,14 @@ function syncPlacedCardPositions(): void {
     }
 
     gsap.set(positionedCard.element, {
+      xPercent: -50,
+      yPercent: -50,
       x: metrics.centerX,
       y: metrics.centerY,
       scale: metrics.scale,
+      rotateX: 0,
+      rotateY: 0,
+      rotateZ: 0,
     });
   }
 }
@@ -124,8 +129,9 @@ function placeCardInstantly(card: HTMLDivElement, seatLabel: string): void {
     y: metrics.centerY,
     scale: metrics.scale,
     rotateZ: 0,
-    rotateY: 180,
+    rotateY: 0,
   });
+  setCardState(card, "front");
 }
 
 function createPlacedCard(assignment: Assignment): PositionedCard | null {
@@ -227,7 +233,7 @@ function animateCardFlight(assignment: Assignment): Promise<HTMLDivElement | nul
     y: launchPoint.y,
     scale: 1.04,
     rotateZ: randomBetween(-6, 6),
-    rotateY: 0,
+    rotateY: 180,
   });
   setCardState(card, "back");
 
@@ -246,7 +252,7 @@ function animateCardFlight(assignment: Assignment): Promise<HTMLDivElement | nul
           y: endPoint.y,
           scale: metrics.scale,
           rotateZ: 0,
-          rotateY: 180,
+          rotateY: 0,
         });
         resolve(card);
       },
@@ -272,7 +278,7 @@ function animateCardFlight(assignment: Assignment): Promise<HTMLDivElement | nul
         ease: "power4.inOut",
       }, 0.06)
       .to(card, {
-        rotateY: 180,
+        rotateY: 0,
         duration: currentSettings.reducedMotion ? 0.42 : 0.78,
         ease: "power1.inOut",
       }, 0.16)
