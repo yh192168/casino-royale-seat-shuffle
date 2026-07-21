@@ -3,7 +3,7 @@ import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { createFlightCard, setCardState } from "./cards";
 import { generateBestArrangement, orderAssignmentsForShow, type Assignment } from "./algorithm";
 import { downloadCsv } from "./csv";
-import { burstConfetti } from "./effects";
+import { burstConfetti, burstLegendaryConfetti, createLegendaryRevealLayer } from "./effects";
 import { createAudioEngine } from "./audio";
 import { createClassroomView, type SeatMetrics } from "./classroom";
 import { createDealerStage, type DealerStage } from "./dealer";
@@ -19,6 +19,10 @@ type PositionedCard = {
   assignment: Assignment;
 };
 
+function normalizeStudentName(name: string): string {
+  return name.replace(/\s+/g, "");
+}
+
 const appRoot = document.querySelector<HTMLDivElement>("#app");
 if (!appRoot) {
   throw new Error("App root not found.");
@@ -31,10 +35,11 @@ const stageHost = document.createElement("div");
 stageHost.className = "casino-stage";
 
 const classroom = createClassroomView();
+const legendaryReveal = createLegendaryRevealLayer();
 const cardLayer = document.createElement("div");
 cardLayer.className = "card-layer";
 
-shell.append(stageHost, classroom.root, cardLayer);
+shell.append(stageHost, legendaryReveal.root, classroom.root, cardLayer);
 appRoot.append(shell);
 
 const initialSettings = loadSettings();
@@ -77,6 +82,24 @@ let currentTimeline: gsap.core.Timeline | null = null;
 let currentTimelineResolve: ((value?: HTMLDivElement | null) => void) | null = null;
 let started = false;
 let completed = false;
+const legendaryStudentAliases = new Set([normalizeStudentName("樋口 悠都"), normalizeStudentName("樋口悠人")]);
+
+function isLegendaryAssignment(assignment: Assignment): boolean {
+  return legendaryStudentAliases.has(normalizeStudentName(assignment.student.name));
+}
+
+function setLegendarySeatState(seatLabel: string, enabled: boolean): void {
+  const seat = classroom.slots.get(seatLabel);
+  if (!seat) {
+    return;
+  }
+
+  seat.classList.toggle("is-legendary", enabled);
+}
+
+function setLegendaryRevealState(enabled: boolean): void {
+  shell.classList.toggle("is-legendary-reveal", enabled);
+}
 
 classroom.hide();
 
@@ -85,7 +108,7 @@ function randomBetween(min: number, max: number): number {
 }
 
 function wait(ms: number): Promise<void> {
-  return new Promise<HTMLDivElement | null>((resolve) => {
+  return new Promise<void>((resolve) => {
     window.setTimeout(resolve, ms);
   });
 }
@@ -140,13 +163,16 @@ function createPlacedCard(assignment: Assignment): PositionedCard | null {
     return null;
   }
 
+  const isLegendary = isLegendaryAssignment(assignment);
   const element = createFlightCard({
     seatLabel: assignment.seat.label,
     name: assignment.student.name,
+    rarity: isLegendary ? "legendary" : "normal",
   });
   cardLayer.append(element);
   setCardState(element, "front");
   element.classList.add("is-settled");
+  setLegendarySeatState(assignment.seat.label, isLegendary);
   placeCardInstantly(element, assignment.seat.label);
   return {
     element,
@@ -161,6 +187,7 @@ function renderFinalLayout(): void {
 
   for (const assignment of finalAssignments) {
     classroom.setSeatOccupied(assignment.seat.label, assignment.student.name);
+    setLegendarySeatState(assignment.seat.label, isLegendaryAssignment(assignment));
     const positionedCard = createPlacedCard(assignment);
     if (positionedCard) {
       placedCards.set(assignment.seat.label, positionedCard);
@@ -176,6 +203,7 @@ function finishShow(): void {
   }
 
   completed = true;
+  setLegendaryRevealState(false);
   ui.setProgress(finalAssignments.length, finalAssignments.length);
   ui.setStatus("COMPLETE");
   ui.setSkipEnabled(false);
@@ -193,6 +221,8 @@ function cancelActiveTimeline(): void {
   currentTimeline = null;
   currentTimelineResolve?.();
   currentTimelineResolve = null;
+  legendaryReveal.reset();
+  setLegendaryRevealState(false);
 }
 
 function animateCardFlight(assignment: Assignment): Promise<HTMLDivElement | null> {
@@ -201,29 +231,32 @@ function animateCardFlight(assignment: Assignment): Promise<HTMLDivElement | nul
     return Promise.resolve(null);
   }
 
+  const isLegendary = isLegendaryAssignment(assignment);
+
   const launchPoint = stage.getDeckPoint();
   const endPoint = {
     x: metrics.centerX,
     y: metrics.centerY,
   };
-  const lift = randomBetween(92, 150);
-  const drift = randomBetween(-110, 110);
+  const lift = isLegendary ? randomBetween(122, 180) : randomBetween(92, 150);
+  const drift = isLegendary ? randomBetween(-150, 150) : randomBetween(-110, 110);
   const midPointA = {
     x: launchPoint.x + drift * 0.2,
-    y: launchPoint.y - lift * 0.58,
+    y: launchPoint.y - lift * (isLegendary ? 0.68 : 0.58),
   };
   const midPointB = {
     x: (launchPoint.x + endPoint.x) * 0.5 + drift,
-    y: Math.min(launchPoint.y, endPoint.y) - lift,
+    y: Math.min(launchPoint.y, endPoint.y) - lift * (isLegendary ? 1.14 : 1),
   };
   const midPointC = {
-    x: endPoint.x + drift * 0.08,
-    y: endPoint.y - lift * 0.15,
+    x: endPoint.x + drift * (isLegendary ? 0.18 : 0.08),
+    y: endPoint.y - lift * (isLegendary ? 0.2 : 0.15),
   };
 
   const card = createFlightCard({
     seatLabel: assignment.seat.label,
     name: assignment.student.name,
+    rarity: isLegendary ? "legendary" : "normal",
   });
   cardLayer.append(card);
   gsap.set(card, {
@@ -231,14 +264,21 @@ function animateCardFlight(assignment: Assignment): Promise<HTMLDivElement | nul
     yPercent: -50,
     x: launchPoint.x,
     y: launchPoint.y,
-    scale: 1.04,
+    scale: isLegendary ? 1.16 : 1.04,
     rotateZ: randomBetween(-6, 6),
     rotateY: 180,
   });
   setCardState(card, "back");
 
   stage.dealPulse();
-  audio.play("draw");
+  if (isLegendary) {
+    setLegendaryRevealState(true);
+    legendaryReveal.play({ reducedMotion: currentSettings.reducedMotion });
+    stage.celebrate();
+    audio.play("rare");
+  } else {
+    audio.play("draw");
+  }
 
   return new Promise((resolve) => {
     const timeline = gsap.timeline({
@@ -271,19 +311,19 @@ function animateCardFlight(assignment: Assignment): Promise<HTMLDivElement | nul
       .to(card, {
         motionPath: {
           path: [launchPoint, midPointA, midPointB, midPointC, endPoint],
-          curviness: 1.55,
+          curviness: isLegendary ? 1.9 : 1.55,
           autoRotate: false,
         },
-        duration: currentSettings.reducedMotion ? 0.8 : 1.28,
+        duration: currentSettings.reducedMotion ? (isLegendary ? 1.0 : 0.8) : (isLegendary ? 1.9 : 1.28),
         ease: "power4.inOut",
       }, 0.06)
       .to(card, {
-        rotateY: 0,
-        duration: currentSettings.reducedMotion ? 0.42 : 0.78,
+        rotateY: isLegendary ? 720 : 0,
+        duration: currentSettings.reducedMotion ? (isLegendary ? 0.88 : 0.42) : (isLegendary ? 1.42 : 0.78),
         ease: "power1.inOut",
       }, 0.16)
       .to(card, {
-        scale: metrics.scale * 1.03,
+        scale: metrics.scale * (isLegendary ? 1.08 : 1.03),
         duration: 0.18,
         ease: "back.out(2.6)",
       }, ">-0.04")
@@ -295,14 +335,21 @@ function animateCardFlight(assignment: Assignment): Promise<HTMLDivElement | nul
   });
 }
 
-async function completeCard(assignment: Assignment, index: number): Promise<void> {
-  ui.setStatus(assignment.student.name);
+async function completeCard(assignment: Assignment, index: number, runId: number): Promise<void> {
+  const isLegendary = isLegendaryAssignment(assignment);
+
+  ui.setStatus(isLegendary ? "LEGENDARY" : assignment.student.name);
   ui.setProgress(index, finalAssignments.length);
   stage.setDeckRemaining(finalAssignments.length - index - 1);
   classroom.setSeatOccupied(assignment.seat.label, assignment.student.name);
+  setLegendarySeatState(assignment.seat.label, isLegendary);
 
   const card = await animateCardFlight(assignment);
   if (!card) {
+    return;
+  }
+
+  if (runId !== animationRunId) {
     return;
   }
 
@@ -318,14 +365,27 @@ async function completeCard(assignment: Assignment, index: number): Promise<void
   finalCard.element.classList.add("is-settled");
   placedCards.set(assignment.seat.label, finalCard);
   gsap.to(finalCard.element, {
-    scale: metrics.scale * 1.02,
-    duration: 0.16,
+    scale: metrics.scale * (isLegendary ? 1.06 : 1.02),
+    duration: isLegendary ? 0.24 : 0.16,
     ease: "power2.out",
     yoyo: true,
     repeat: 1,
   });
 
   audio.play("land");
+  if (isLegendary) {
+    burstLegendaryConfetti({ x: metrics.centerX, y: metrics.centerY });
+    await wait(currentSettings.reducedMotion ? 2500 : 3500);
+    if (runId !== animationRunId) {
+      return;
+    }
+    setLegendaryRevealState(false);
+  }
+
+  if (runId !== animationRunId) {
+    return;
+  }
+
   ui.setProgress(index + 1, finalAssignments.length);
   syncPlacedCardPositions();
 }
@@ -366,7 +426,7 @@ async function startShow(): Promise<void> {
     }
 
     const assignment = drawOrder[index];
-    await completeCard(assignment, index);
+    await completeCard(assignment, index, runId);
   }
 
   if (runId !== animationRunId) {

@@ -1,7 +1,7 @@
 import { Howl, Howler } from "howler";
 import type { AppSettings } from "./ui";
 
-export type SoundName = "shuffle" | "draw" | "land" | "light" | "complete" | "ambient";
+export type SoundName = "shuffle" | "draw" | "land" | "light" | "rare" | "complete" | "ambient";
 
 export type AudioEngine = {
   unlock: () => Promise<void>;
@@ -119,6 +119,12 @@ export function createAudioEngine(initialSettings: AppSettings): AudioEngine {
     volume: initialSettings.masterVolume * initialSettings.sfxVolume,
   });
 
+  const rare = new Howl({
+    src: [makeTone(0.72, [523.25, 783.99, 1046.5, 1567.98], 3.8, 0.82)],
+    preload: true,
+    volume: initialSettings.masterVolume * initialSettings.sfxVolume,
+  });
+
   const complete = new Howl({
     src: [makeTone(0.72, [392, 523.25, 659.25, 783.99], 3.8, 0.78)],
     preload: true,
@@ -132,7 +138,7 @@ export function createAudioEngine(initialSettings: AppSettings): AudioEngine {
     volume: initialSettings.masterVolume * initialSettings.ambientVolume,
   });
 
-  const allSfx = [shuffle, draw, land, light, complete];
+  const allSfx = [shuffle, draw, land, light, rare, complete];
   let settings = initialSettings;
 
   function applyVolumes(): void {
@@ -183,6 +189,10 @@ export function createAudioEngine(initialSettings: AppSettings): AudioEngine {
         case "light":
           light.stop();
           light.play();
+          break;
+        case "rare":
+          rare.stop();
+          rare.play();
           break;
         case "complete":
           complete.stop();
