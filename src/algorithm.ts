@@ -96,13 +96,46 @@ export function generateBestArrangement(
   let bestScore = -Infinity;
   let bestCandidate: Student[] = [];
 
-  for (let iteration = 0; iteration < iterations; iteration += 1) {
-    const candidate = shuffleInPlace([...students], random);
-    const score = scoreArrangement(candidate);
+  // Pin handling: force 長澤 潤 to seat C1 if present
+  const pinnedName = "長澤 潤";
+  const pinnedSeatLabel = "C1";
+  const pinnedStudent = students.find((s) => s.name === pinnedName);
+  const pinnedIndex = seatDefinitions.findIndex((s) => s.label === pinnedSeatLabel);
 
-    if (score > bestScore) {
-      bestScore = score;
-      bestCandidate = candidate;
+  if (pinnedStudent && pinnedIndex !== -1) {
+    // When pinned, shuffle only the other students and insert the pinned student at the pinned index.
+    const othersBase = students.filter((s) => s.name !== pinnedName);
+
+    for (let iteration = 0; iteration < iterations; iteration += 1) {
+      const others = shuffleInPlace([...othersBase], random);
+      const candidate: Student[] = new Array(students.length);
+      let otherIdx = 0;
+
+      for (let i = 0; i < seatDefinitions.length; i += 1) {
+        if (i === pinnedIndex) {
+          candidate[i] = pinnedStudent;
+        } else {
+          candidate[i] = others[otherIdx++];
+        }
+      }
+
+      const score = scoreArrangement(candidate);
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestCandidate = candidate;
+      }
+    }
+  } else {
+    // Fallback: original behaviour if pinned student or seat not found
+    for (let iteration = 0; iteration < iterations; iteration += 1) {
+      const candidate = shuffleInPlace([...students], random);
+      const score = scoreArrangement(candidate);
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestCandidate = candidate;
+      }
     }
   }
 
