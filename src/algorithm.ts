@@ -96,15 +96,31 @@ export function generateBestArrangement(
   let bestScore = -Infinity;
   let bestCandidate: Student[] = [];
 
-  // Pin handling: force 長澤 潤 to seat C1 if present
-  const pinnedName = "長澤 潤";
-  const pinnedSeatLabel = "C1";
-  const pinnedStudent = students.find((s) => s.name === pinnedName);
-  const pinnedIndex = seatDefinitions.findIndex((s) => s.label === pinnedSeatLabel);
+  // Pin handling: force specific students to specific seats if present
+  const pinnedMap: Record<string, string> = {
+    "長澤 潤": "B1",
+    "小田島 律": "E1",
+  };
 
-  if (pinnedStudent && pinnedIndex !== -1) {
-    // When pinned, shuffle only the other students and insert the pinned student at the pinned index.
-    const othersBase = students.filter((s) => s.name !== pinnedName);
+  const pinnedEntries: { student: Student; seatIndex: number }[] = [];
+
+  for (const [name, seatLabel] of Object.entries(pinnedMap)) {
+    const stud = students.find((s) => s.name === name);
+    const seatIdx = seatDefinitions.findIndex((s) => s.label === seatLabel);
+    if (stud && seatIdx !== -1) {
+      pinnedEntries.push({ student: stud, seatIndex: seatIdx });
+    }
+  }
+
+  // If there are pinned entries, ensure they don't conflict (two students pinned to same seat)
+  const seatIndexes = new Set(pinnedEntries.map((p) => p.seatIndex));
+
+  const hasConflict = seatIndexes.size !== pinnedEntries.length;
+
+  if (pinnedEntries.length > 0 && !hasConflict) {
+    // Shuffle only the non-pinned students and insert pinned students at their indices
+    const pinnedNames = new Set(pinnedEntries.map((p) => p.student.name));
+    const othersBase = students.filter((s) => !pinnedNames.has(s.name));
 
     for (let iteration = 0; iteration < iterations; iteration += 1) {
       const others = shuffleInPlace([...othersBase], random);
@@ -112,8 +128,9 @@ export function generateBestArrangement(
       let otherIdx = 0;
 
       for (let i = 0; i < seatDefinitions.length; i += 1) {
-        if (i === pinnedIndex) {
-          candidate[i] = pinnedStudent;
+        const pinned = pinnedEntries.find((p) => p.seatIndex === i);
+        if (pinned) {
+          candidate[i] = pinned.student;
         } else {
           candidate[i] = others[otherIdx++];
         }
@@ -127,7 +144,7 @@ export function generateBestArrangement(
       }
     }
   } else {
-    // Fallback: original behaviour if pinned student or seat not found
+    // Fallback: original behaviour if no valid pins or conflict detected
     for (let iteration = 0; iteration < iterations; iteration += 1) {
       const candidate = shuffleInPlace([...students], random);
       const score = scoreArrangement(candidate);
